@@ -1,4 +1,7 @@
 _status_lookup = (
+    (100, b'Continue'),
+    (101, b'Switching Protocols'),
+    (102, b'Processing'),
     (200, b'OK'),
     (201, b'Created'),
     (202, b'Accepted'),
@@ -37,17 +40,20 @@ _status_lookup = (
     (501, b'Not Implemented'),
     (502, b'Bad Gateway'),
     (503, b'Service Unavailable'),
+    (511, b'Network Authentication Required'),
 )
 
+HTTP_METHODS = ('GET', 'POST', 'PUT', 'HEAD', 'OPTIONS', 'PATCH', 'DELETE')
 
-def _get_status_text(status_code):
+
+def get_status_text(status_code):
     status_text_list = [text for code, text in _status_lookup if code == status_code]
     if len(status_text_list) == 0:
         return b"NA"
     return status_text_list[0]
 
 
-def _get_mime_type(fname):
+def get_mime_type(fname):
     # Provide minimal detection of important file
     # types to keep browsers happy
     if fname.endswith(".html"):
@@ -62,13 +68,54 @@ def _get_mime_type(fname):
 
 
 def _render_headers(*args):
+    """
+
+    :param args:
+    :rtype: binary
+    """
     content_str = b""
     for header, content in args:
         content_str += b"%s: %s\r\n" % (header, content)
     return content_str
 
 
-def _response_header(status=200, content_type="text/html", content_length=None, headers=None):
+# Request parser
+def parse_header(list_of_header_str):
+    header = dict()
+    for header_str in list_of_header_str:
+        key, value = header_str.split(":")[:2]
+        header[key] = value
+    return header
+
+
+def parse_request(request_string):
+    """
+    Parses a request and splits them into an dict to return
+    :param request_string: str
+    :return: dict
+    """
+    heading, data = request_string.split("\r\n\r\n")[:2]
+    header = heading.split("\r\n")
+    data.rstrip("\r\n")
+    method, route, http_version = header[0].split(" ")[:3]
+    return dict(
+        method=method,
+        route=route,
+        http_version=http_version,
+        header=parse_header(header[1:]),
+        body=data.rstrip("\r\n")
+    )
+
+
+# Response part
+def response_header(status=200, content_type="text/html", content_length=None, headers=None):
+    """
+    :type status: int
+    :type content_type: str
+    :type headers: list
+    :return: binary
+    """
+
     if headers is None:
         headers = list()
     else:
@@ -80,29 +127,7 @@ def _response_header(status=200, content_type="text/html", content_length=None, 
                   b"%s" \
                   b"\r\n" % (
                       status,
-                      _get_status_text(status),
+                      get_status_text(status),
                       _render_headers(*headers),
                   )
     return html_string
-
-
-def _parse_header(list_of_header_str):
-    header = dict()
-    for header_str in list_of_header_str:
-        key, value = header_str.split(":")[:2]
-        header[key] = value
-    return header
-
-
-def _parse_request(request_string):
-    heading, data = request_string.split("\r\n\r\n")[:2]
-    header = heading.split("\r\n")
-    data.rstrip("\r\n")
-    method, route, http_version = header[0].split(" ")[:3]
-    return dict(
-        method=method,
-        route=route,
-        http_version=http_version,
-        header=_parse_header(header[1:]),
-        body=data.rstrip("\r\n")
-    )

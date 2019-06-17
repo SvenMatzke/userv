@@ -1,13 +1,17 @@
 import gc
 import os
 import socket
+from userv import response_header, get_mime_type, parse_request
 
-from userv import _response_header, _get_mime_type, _parse_request
+try:
+    import ujson
+except ImportError:
+    import json
 
 
 def text(writer, data, status=200, content_type="text/html", headers=None):
     writer.write(
-        _response_header(
+        response_header(
             status=status,
             content_type=content_type,
             content_length=len(data),
@@ -47,7 +51,7 @@ def static_file(writer, fname, buffer):
             status=404
         )
     else:
-        mime_type = _get_mime_type(fname)
+        mime_type = get_mime_type(fname)
         if mime_type is None:
             text(
                 writer,
@@ -59,7 +63,7 @@ def static_file(writer, fname, buffer):
         content_len = os.stat(fname)[6]
         buffer_size = len(buffer)
         writer.write(
-            _response_header(
+            response_header(
                 status=200,
                 content_type=mime_type,
                 content_length=content_len
@@ -80,32 +84,13 @@ def static_file(writer, fname, buffer):
 
 class App:
 
-    def __init__(self):
+    def __init__(self, router):
+        """
+
+        :type router: userv.routing.Router
+        """
+        self.router = router
         self._routes = dict()
-
-    def add_route(self, route, callback, method='GET'):
-        if route in self._routes:
-            self._routes[route][method] = callback
-        else:
-            self._routes[route] = {method: callback}
-
-    def _get_callback(self, route, method):
-        """
-        :type route: str
-        :type method: str
-        """
-        if route.endswith("/"):
-            route_with_slash = route
-            route_without_slash = route[:-1]
-        else:
-            route_with_slash = route + "/"
-            route_without_slash = route
-
-        route_method_dict = self._routes.get(route_with_slash, self._routes.get(route_without_slash, None))
-        if route_method_dict is None:
-            return 404
-
-        return route_method_dict.get(method, 405)
 
     def read_buffered_request(self, reader):
         req = list()
@@ -116,7 +101,7 @@ class App:
                 break
         return b"".join(req)
 
-    def run_server(self, ip_address="0.0.0.0", port=80, timeout_callback=None):
+    def run(self, ip_address="0.0.0.0", port=80, timeout_callback=None):
         """
         this method will handle the gc it self and so should your sites
         :param ip_address:
@@ -159,12 +144,12 @@ class App:
     def run_handle(self, reader, writer):
         complete_request = self.read_buffered_request(reader)
         gc.collect()
-        parsed_request = _parse_request(complete_request.decode())
+        parsed_request = parse_request(complete_request.decode())
         gc.collect()
         route = parsed_request.get('route')
         print("Serving ", route, " | ", parsed_request.get('method'))
         # routes
-        callback = self._get_callback(route=route, method=parsed_request.get('method'))
+        callback = self.router.get(route=route, method=parsed_request.get('method'))
         gc.collect()
         if not callable(callback):
             text(writer, "Requested Route or method is not available", status=404)

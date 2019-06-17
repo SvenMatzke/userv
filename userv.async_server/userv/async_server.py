@@ -1,3 +1,12 @@
+import os
+from asyncio import get_event_loop
+from userv import response_header, get_mime_type, parse_request, parse_header
+
+try:
+    import ujson
+except ImportError:
+    import json
+
 
 async def text(data, status=200, content_type="text/html", headers=None):
     """
@@ -15,7 +24,7 @@ async def text(data, status=200, content_type="text/html", headers=None):
     headers.append(("Content-Length", str(len(data))))
     html_string = b"%s" \
                   b"%s\r\n" % (
-                      _response_header(
+                      response_header(
                           status=status,
                           content_type=content_type,
                           content_length=len(data),
@@ -52,47 +61,42 @@ def _parse_response(reponse_str):
     heading, data = reponse_str.split("\r\n\r\n")
     header = heading.split("\r\n")
     data.rstrip("\r\n")
-    http_version, status_code, status_translation= header[0].split(" ")
+    http_version, status_code, status_translation = header[0].split(" ")
     return dict(
         status_code=status_code,
         status_translation=status_translation,
         http_version=http_version,
-        header=_parse_header(header[1:]),
+        header=parse_header(header[1:]),
         body=data.rstrip("\r\n")
     )
 
+
 class App:
 
-    def __init__(self):
+    def __init__(self, router, buffersize=64):
+        """
+
+        :type router: microroute.Router
+        """
+        self.router = router
+        self._buffersize = buffersize
         self._routes = dict()
 
-    def add_route(self, route, callback, method='GET'):
-        if method not in HTTP_METHODS:
-            raise AttributeError("Method %s is not supported" % method)
-        if route in self._routes:
-            self._routes[route][method] = callback
-        else:
-            self._routes[route] = {method: callback}
-
-    async def _get_callback(self, route, method):
+    def run_task(self, address="0.0.0.0", port=80):
         """
-        :type route: str
-        :type method: str
+        adds a run task to the current eventloop.
+        therefore server will start as soon as async.run is called
+        :param address:
+        :param port:
+        :return:
         """
-        if route.endswith("/"):
-            route_with_slash = route
-            route_without_slash = route[:-1]
-        else:
-            route_with_slash = route + "/"
-            route_without_slash = route
+        loop = get_event_loop()
+        loop.create_task(
+            loop.start_server(self._run_handle, address, port)
+        )
 
-        route_method_dict = self._routes.get(route_with_slash, self._routes.get(route_without_slash, None))
-        if route_method_dict is None:
-            return 404
-
-        return route_method_dict.get(method, 405)
-
-    async def run_handle(self, reader, writer):
+    async def _run_handle(self, reader, writer):
+        print("started")
         complete_request = await reader.read()
         parsed_request = parse_request(complete_request.decode())
         route = parsed_request.get('route')
@@ -117,14 +121,14 @@ class App:
                 else:
                     # serve static file
                     await  writer.awrite(
-                        _response_header(
+                        response_header(
                             status=200,
                             content_type=mime_type,
                             content_length=os.stat(fname)[0]
                         )
                     )
                     file_ptr = open(fname)
-                    buf = bytearray(64)
+                    buf = bytearray(self._buffersize)
                     while True:
                         l = file_ptr.readinto(buf)
                         if not l:
@@ -133,7 +137,7 @@ class App:
                     file_ptr.close()
 
         else:
-            callback = await self._get_callback(route=route, method=parsed_request.get('method'))
+            callback = await self.router.get(route=route, method=parsed_request.get('method'))
             if callback in [404, 405]:
                 await text("Requested Route or method is not available", status=callback)
             response = await callback(parsed_request)
@@ -141,3 +145,4 @@ class App:
                 response
             )
         await writer.aclose()
+
