@@ -11,12 +11,12 @@ Router objects are simple and are input to the server instances.
 Example:
 ::
 
-    from userv.routing import Router
+    from userv.routing import Router, text
 
     router = Router()
 
-    def test(writer, request):
-        pass
+    def test(request):
+        return text("some text")
 
     router.add("/resturl", test, method="GET")
 
@@ -33,6 +33,11 @@ for creating swagger and so on there is a also a list command:
 
 With these object all server are instances and we have full controll even without
 an server instance.
+
+Response types
+==============
+There are a few build in response types text, json and static_files
+
 
 Further packages & webserver
 ============================

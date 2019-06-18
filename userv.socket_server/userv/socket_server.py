@@ -9,40 +9,6 @@ except ImportError:
     import json
 
 
-def text(writer, data, status=200, content_type="text/html", headers=None):
-    writer.write(
-        response_header(
-            status=status,
-            content_type=content_type,
-            content_length=len(data),
-            headers=headers
-        )
-    )
-    writer.write(data)
-    writer.write(b'\r\n')
-
-
-def json(writer, data, status=200, headers=None):
-    content_type = "application/json"
-    try:
-        data_string = ujson.dumps(data)
-    except:
-        text(
-            writer,
-            "cant decode data to json",
-            status=422,
-            headers=headers
-        )
-        return
-    text(
-        writer,
-        data_string,
-        status=status,
-        content_type=content_type,
-        headers=headers
-    )
-
-
 def static_file(writer, fname, buffer):
     if fname not in os.listdir():
         text(
