@@ -3,7 +3,7 @@ import sdist_upip
 
 setup(
     name='userv',
-    version='0.3.0',
+    version='0.4.0',
     packages=['userv'],
     url='https://github.com/SvenMatzke/userv',
     license='MIT',
@@ -12,5 +12,5 @@ setup(
     description='Minimalistic core for webserver on microcontroler',
     long_description=open('README.rst').read(),
     cmdclass={'sdist': sdist_upip.sdist},
-    install_requires=['ujson', 'micropython-ulogging']
+    install_requires=['ujson']
 )

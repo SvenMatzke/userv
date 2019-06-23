@@ -1,4 +1,4 @@
-from userv.routing import Router
+from userv.routing import Router, text_response, json_response
 
 
 def test_add_and_get_routes():
@@ -44,3 +44,19 @@ def test_route_listings():
     assert swagger_info[0]['url'] == "/geturl"
     assert swagger_info[0]['method'] == "POST"
     assert swagger_info[0]['doc'] == "testing info"
+
+
+def test_text_func():
+    text_gen = text_response("hiho")
+    msg = list(text_gen)
+    assert len(msg) == 5
+    assert "hiho" in msg[-1].decode()
+    assert "text/html" in msg[1].decode()
+
+
+def test_json_func():
+    json_gen = json_response({"tada": "hiho"})
+    msg = list(json_gen)
+    assert len(msg) == 5
+    assert "hiho" in msg[-1].decode()
+    assert "application/json" in msg[1].decode()

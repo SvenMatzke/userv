@@ -71,12 +71,10 @@ def _render_headers(*args):
     """
 
     :param args:
-    :rtype: binary
+    :rtype: generator
     """
-    content_str = b""
     for header, content in args:
-        content_str += b"%s: %s\r\n" % (header, content)
-    return content_str
+        yield b"%s: %s\r\n" % (header.encode(), content.encode())
 
 
 # Request parser
@@ -113,7 +111,7 @@ def response_header(status=200, content_type="text/html", content_length=None, h
     :type status: int
     :type content_type: str
     :type headers: list
-    :return: binary
+    :return: generator with binary
     """
 
     if headers is None:
@@ -123,11 +121,7 @@ def response_header(status=200, content_type="text/html", content_length=None, h
     headers.append(("Content-Type", "%s; utf-8" % content_type))
     if content_length is not None:
         headers.append(("Content-Length", str(content_length)))
-    html_string = b"HTTP/1.1 %i %s\r\n" \
-                  b"%s" \
-                  b"\r\n" % (
-                      status,
-                      get_status_text(status),
-                      _render_headers(*headers),
-                  )
-    return html_string
+    yield b"HTTP/1.1 %i %s\r\n" % (status, get_status_text(status))
+    for header in _render_headers(*headers):
+        yield b"%s" % header
+    yield b"\r\n"

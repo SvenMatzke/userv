@@ -1,6 +1,5 @@
 The catch
 =========
-
 The frist start for every webserver is routing and parsing html.
 This is the core.
 
@@ -11,12 +10,12 @@ Router objects are simple and are input to the server instances.
 Example:
 ::
 
-    from userv.routing import Router, text
+    from userv.routing import Router, text_response
 
     router = Router()
 
     def test(request):
-        return text("some text")
+        return text_response("some text")
 
     router.add("/resturl", test, method="GET")
 
@@ -31,12 +30,23 @@ for creating swagger and so on there is a also a list command:
 
     router.list()
 
-With these object all server are instances and we have full controll even without
+With these object all server are instances and we have full control even without
 an server instance.
 
 Response types
 ==============
-There are a few build in response types text, json and static_files
+There are a few build in response types text, json, serving static files although has to be
+determined by async or normal file pointer usage. There fore these are
+in the appropriate packages.
+
+The general gist of the response functions is to create a generator
+which will be used to consomed by your server.
+
+if you want to have full control about your memory flow or need to write a few
+memory hungry responses feel free to write an response yourself.
+
+Little hint make sure to use the response_header function and end the response with
+an "\\r\\n".
 
 
 Further packages & webserver
