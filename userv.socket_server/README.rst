@@ -4,21 +4,20 @@ Most simplistic socket server for micropython
 
 Webserver
 =========
-first we need to add routes to a router.
-Atm creating json or text responses is part of the webserver but will be generalised to the core
-in future.
+first we need to add routes to a router. This is described in userv.core
+although serving static files is described below.
+
 Example:
 ::
 
     from userv.routing import Router
-    from userv.socket_server import App
+    from userv.socket_server import run_server
     router = Router()
+    # we add some routes
 
-    web_server = App(router)
-    web_server.run()
+    run_server(router)
 
-
-server starts and runs forever.
+this way the server starts and runs forever.
 Because sometimes you want to start a standby mode there is way to kill the run task
 by given a callback which controls the loop.
 We call it the timeout callback for now. Basicly the server runs as
@@ -30,7 +29,19 @@ Example:
     def we_never_timeout():
         return True
 
-    webserver.run(timeout_callback=we_never_timeout)
+    run_server(router, timeout_callback=we_never_timeout)
 
 This is only a realy simple and silly example, but be aware to not do heavy lifting in this function,
 because it will hinder your server to react normal.
+
+Serve static files
+==================
+It is prety simple just add the address with the file you want to serve.
+
+Example:
+::
+
+    from userv.socket_server import static_file
+    router.add("/index", static_file('boot.py'))
+
+Although the example should never expose your code. It is a prety simple and fast test.

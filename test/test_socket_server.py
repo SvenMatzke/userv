@@ -1,8 +1,9 @@
 import pytest
+from userv import socket_server
 
 @pytest.fixture()
 def server():
-    server =
+    server = ""
     yield server
     # shutdown server
 

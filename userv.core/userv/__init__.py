@@ -64,7 +64,7 @@ def get_mime_type(fname):
         return "text/javascript"
     if fname.endswith(".png") or fname.endswith(".jpg"):
         return "image"
-    return None
+    return "text/html"
 
 
 def _render_headers(*args):

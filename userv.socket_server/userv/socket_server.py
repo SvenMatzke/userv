@@ -1,47 +1,47 @@
 import gc
 import socket
+import os
 from userv import response_header, get_mime_type, parse_request
 from userv.routing import text_response
+import ulogging
 
 
-# TODO
-# def static_file(writer, fname, buffer):
-#     if fname not in os.listdir():
-#         text(
-#             writer,
-#             "",
-#             status=404
-#         )
-#     else:
-#         mime_type = get_mime_type(fname)
-#         if mime_type is None:
-#             text(
-#                 writer,
-#                 "",
-#                 status=415,
-#             )
-#             return
-#         # serve static file
-#         content_len = os.stat(fname)[6]
-#         buffer_size = len(buffer)
-#         writer.write(
-#             response_header(
-#                 status=200,
-#                 content_type=mime_type,
-#                 content_length=content_len
-#             )
-#         )
-#         file_ptr = open(fname, "rb")
-#         for _ in range(0, (content_len // buffer_size)):
-#             file_ptr.readinto(buffer)
-#             writer.write(buffer)
-#             gc.collect()
-#
-#         readed_len = file_ptr.readinto(buffer)
-#         writer.write(buffer[:readed_len])
-#         writer.write(b'\r\n')
-#         file_ptr.close()
-#         gc.collect()
+def _file_response(mime_type, file_name, headers=None):
+    content_len = os.stat(file_name)[6]
+    for line in response_header(
+            status=200,
+            content_type=mime_type,
+            content_length=content_len,
+            headers=headers
+    ):
+        yield b"%s" % line
+    buffer = bytearray(128)
+    buffer_size = len(buffer)
+    file_ptr = open(file_name, "rb")
+    for _ in range(0, (content_len // buffer_size)):
+        file_ptr.readinto(buffer)
+        yield bytes(buffer)
+
+    readed_len = file_ptr.readinto(buffer)
+    file_ptr.close()
+    gc.collect()
+    yield bytes(buffer[:readed_len])
+    yield b"\r\n"
+
+
+def static_file(file_name):
+    """
+    function to serve static files easily
+    """
+
+    def file_response(request):
+        if file_name not in os.listdir():
+            return text_response("", status=404)
+        else:
+            mime_type = get_mime_type(file_name)
+            return _file_response(mime_type, file_name)
+
+    return file_response
 
 
 def _read_buffered_request(reader):
@@ -55,6 +55,9 @@ def _read_buffered_request(reader):
 
 
 def _run_handle(router, reader, writer):
+    """
+    run handle to serve data to the outside
+    """
     complete_request = _read_buffered_request(reader)
     gc.collect()
     parsed_request = parse_request(complete_request.decode())
@@ -64,8 +67,11 @@ def _run_handle(router, reader, writer):
     # routes
     callback = router.get(route=route, method=parsed_request.get('method'))
     gc.collect()
-    if not callable(callback):
-        generator = text_response("Requested Route or method is not available", status=404)
+    router.get(route=route, method=parsed_request.get('method'))
+    if callback in [404, 405]:
+        generator = text_response("", status=callback)
+    elif not callable(callback):
+        generator = text_response("Method is not callable for given route", status=404)
     else:
         generator = callback(parsed_request)
 
@@ -81,11 +87,15 @@ def run_server(router, ip_address="0.0.0.0", port=80, timeout_callback=None):
     :param timeout_callback: if None we run forever
     """
     addr = socket.getaddrinfo(ip_address, port)[0][-1]
+    # add some basic logging
+    log = ulogging.getLogger("socket_server")
+    log.setLevel(ulogging.DEBUG)
 
     # creating socket mess
     s = socket.socket()
     gc.disable()
     s.bind(addr)
+    print("Server started at %s with port %s" % (ip_address, port))
     s.listen(1)
     timeout = lambda: True
     if timeout_callback is not None:
