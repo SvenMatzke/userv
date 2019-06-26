@@ -1,9 +1,50 @@
-from userv import HTTP_METHODS, response_header
+import gc
+import os
+
+from userv import HTTP_METHODS, response_header, get_mime_type
 
 try:
     import ujson as json
 except ImportError:
     import json
+
+
+def _file_response(mime_type, file_name, headers=None):
+    content_len = os.stat(file_name)[6]
+    for line in response_header(
+            status=200,
+            content_type=mime_type,
+            content_length=content_len,
+            headers=headers
+    ):
+        yield b"%s" % line
+    buffer = bytearray(128)
+    buffer_size = len(buffer)
+    file_ptr = open(file_name, "rb")
+    for _ in range(0, (content_len // buffer_size)):
+        file_ptr.readinto(buffer)
+        yield bytes(buffer)
+
+    readed_len = file_ptr.readinto(buffer)
+    file_ptr.close()
+    gc.collect()
+    yield bytes(buffer[:readed_len])
+    yield b"\r\n"
+
+
+def static_file(file_name):
+    """
+    function to serve static files easily
+    """
+
+    def file_response(request):
+        if file_name not in os.listdir():
+            return text_response("", status=404)
+        else:
+            mime_type = get_mime_type(file_name)
+            return _file_response(mime_type, file_name)
+
+    return file_response
 
 
 def text_response(data, status=200, content_type="text/html", headers=None):
@@ -95,5 +136,5 @@ class Router:
                 yield {
                     'url': url,
                     'method': method,
-                    'doc': callback.__doc__,
+                    'doc': getattr(callback, "__doc__", ""),
                 }

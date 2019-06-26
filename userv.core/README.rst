@@ -1,6 +1,6 @@
 The catch
 =========
-The frist start for every webserver is routing and parsing html.
+The first start for every webserver is routing and parsing html.
 This is the core.
 
 
@@ -40,7 +40,7 @@ determined by async or normal file pointer usage. There fore these are
 in the appropriate packages.
 
 The general gist of the response functions is to create a generator
-which will be used to consomed by your server.
+which will be used to consumed by your server.
 
 if you want to have full control about your memory flow or need to write a few
 memory hungry responses feel free to write an response yourself.
@@ -49,13 +49,27 @@ Little hint make sure to use the response_header function and end the response w
 an "\\r\\n".
 
 
+Serve static files
+==================
+It is pretty simple just add the address with the file you want to serve.
+
+Example:
+::
+
+    from userv.routing import static_file
+
+    router.add("/index", static_file('boot.py'))
+
+Although the example should never expose your code. It is a prety simple and fast test.
+
+
 Further packages & webserver
 ============================
 Atm there is an implementation for an socketserver which runs even on on esp8266::
 
     pip install userv.socket_server
 
-And an async server with the same interface.::
+And an async server with an exchangable interface.::
 
     pip install userv.async_server
 
