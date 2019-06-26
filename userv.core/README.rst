@@ -30,14 +30,12 @@ for creating swagger and so on there is a also a list command:
 
     router.list()
 
-With these object all server are instances and we have full control even without
+With these routes in one place we have full control even without
 an server instance.
 
 Response types
 ==============
-There are a few build in response types text, json, serving static files although has to be
-determined by async or normal file pointer usage. There fore these are
-in the appropriate packages.
+There are a few build in response types text, json and static files.
 
 The general gist of the response functions is to create a generator
 which will be used to consumed by your server.
@@ -60,7 +58,7 @@ Example:
 
     router.add("/index", static_file('boot.py'))
 
-Although the example should never expose your code. It is a prety simple and fast test.
+Although the example should never expose your code. It is a pretty simple and fast test.
 
 
 Further packages & webserver

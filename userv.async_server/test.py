@@ -12,11 +12,12 @@ async def smth(request):
     return text_response('ss')
 
 r = Router()
+run_server(r)
 r.add('/', lambda x: text_response('smth'))
 r.add('/s', smth)
 r.add('/file', static_file('socket_server.py'))
 print(list(r.list()))
-run_server(r)
+
 
 loop = get_event_loop()
 
