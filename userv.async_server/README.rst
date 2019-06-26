@@ -4,21 +4,27 @@ Simple async webserver
 
 Webserver
 =========
-first we need to add routes to a router.
-Atm creating json or text responses is part of the webserver but will be generalised to the core
-in future.
+First we need to add routes to a router. After this we can add a task to the
+async loop with:
 
-First we add a server task to the event loop
 Example:
 ::
 
     from userv.routing import Router
-    from userv.async_server import App
+    from userv.async_server import run_server
     router = Router()
 
-    web_server = App(router)
-    web_server.run_task()
+    run_server(router)
 
 
-Now we have added the current app to the event loop and stll work on other tasks.
-It will be run when we trigger the loop.run as all async tasks should.
+Now we have added the current app to the event loop and we still have
+to run the event loop.
+
+Example:
+::
+
+    from uasyncio import get_event_loop
+    loop = get_event_loop()
+    loop.run_forever()
+
+Now the server will run and serve your data.

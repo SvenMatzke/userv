@@ -3,7 +3,7 @@ import sdist_upip
 
 setup(
     name='userv.async_server',
-    version='0.2.0',
+    version='0.3.0',
     packages=['userv'],
     url='https://github.com/SvenMatzke/userv',
     license='MIT',
@@ -12,5 +12,5 @@ setup(
     description='Async server for userv',
     long_description=open('README.rst').read(),
     cmdclass={'sdist': sdist_upip.sdist},
-    install_requires=['micropython-uasyncio', 'userv', 'ujson']
+    install_requires=['micropython-uasyncio', 'userv>=0.4.0', 'micropython-ulogging']
 )
