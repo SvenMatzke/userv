@@ -3,7 +3,7 @@ import sdist_upip
 
 setup(
     name='userv.socket_server',
-    version='0.3.0',
+    version='0.3.1',
     packages=['userv'],
     url='https://github.com/SvenMatzke/userv',
     license='MIT',

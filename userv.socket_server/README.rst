@@ -33,15 +33,3 @@ Example:
 
 This is only a realy simple and silly example, but be aware to not do heavy lifting in this function,
 because it will hinder your server to react normal.
-
-Serve static files
-==================
-It is prety simple just add the address with the file you want to serve.
-
-Example:
-::
-
-    from userv.socket_server import static_file
-    router.add("/index", static_file('boot.py'))
-
-Although the example should never expose your code. It is a prety simple and fast test.
