@@ -136,5 +136,4 @@ class Router:
                 yield {
                     'url': url,
                     'method': method,
-                    'doc': getattr(callback, "__doc__", ""),
                 }
