@@ -129,11 +129,8 @@ class Router:
 
         return route_method_dict.get(method, 405)
 
-    def list(self):
-        """gathers all information and returns a list of all urls"""
-        for url, url_dict in self._routes.items():
-            for method, callback in url_dict.items():
-                yield {
-                    'url': url,
-                    'method': method,
-                }
+    def routes(self):
+        """gathers all information and returns the routes
+        :rtype: dict
+        """
+        return self._routes

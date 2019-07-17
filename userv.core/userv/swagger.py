@@ -1,8 +1,13 @@
 """
 set attr on func does not work in micropython therefore we need a global store here
 """
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 _function_information = dict()
+_definitions = dict()
 
 
 def _convert_to_swagger_type(value):
@@ -55,8 +60,10 @@ def info(summary, consumes=None, produces=None):
     def _wrap(func):
         old_data = _function_information.get(func, {})
         old_data["summary"] = summary
-        old_data["consumes"] = consumes
-        old_data["produces"] = produces
+        if consumes is not None:
+            old_data["consumes"] = consumes
+        if produces is not None:
+            old_data["produces"] = produces
         _function_information[func] = old_data
         return func
 
@@ -94,22 +101,21 @@ def body(name, summary="", example=None):
 
     def _wrap(func):
         old_data = _function_information.get(func, {})
-        parameters = [{
+        parameters = {
             'name': "body",
             "in": "body",
             "description": summary,
-            "required": True,
-            "schema": {  # TODO is example is no dict
+            "required": True
+        }
+        if isinstance(example, dict):
+            parameters['schema'] = {
                 "$ref": "#/definitions/%s" % name
             }
-        }]
-        old_data['parameter'] = parameters
+            _definitions[name] = _convert_dict_for_swagger(example)
+        else:
+            parameters['example'] = _convert_to_swagger_type(example)
+        old_data['parameter'] = [parameters]
 
-        # if dict we need to add a definition
-        if isinstance(example, dict):
-            definitions = old_data.get('definitions', [])
-            definitions[name] = _convert_dict_for_swagger(example)
-            old_data['definitions'] = definitions
         _function_information[func] = old_data
         return func
 
@@ -124,25 +130,41 @@ def response(code, description=""):
     def _wrap(func):
         old_data = _function_information.get(func, {})
         responses = old_data.get('responses', {})
-        responses[code] = {'description': description}
+        responses[str(code)] = {'description': description}
         old_data['responses'] = responses
         _function_information[func] = old_data
         return func
     return _wrap
 
 
-#
-# if consumes is None:
-#      consumes = ["application/json"]
-#  if produces is None:
-#      produces = ["application/json"]
+def _swagger_method(callback):
+    """
+    converts gathered information into swagger format
+    """
+    information = _function_information.get(callback, {})
+    information['summary'] = information.get('summary', "")
+    information['description'] = information.get('summary', "")
+    information['produces'] = information.get('produces', ["application/json"])
+    information['consumes'] = information.get('consumes', ["application/json"])
+    information['parameters'] = information.get("parameters", [])
+    information['responses'] = information.get('responses', {})
+    return information
+
 
 def swagger_response(info_description, title, version="1.0.0", host="127.0.0.1", base_path="/", router_instance=None):
     """
-
+    :type info_description: str
+    :type title: str
+    :type version: str
+    :type host: str
+    :type base_path: str
+    :type router_instance: userv.routing.Router
     :return:
     """
-    #
+    if router_instance is None:
+        routes = {}
+    else:
+        routes = router_instance.routes()
     # header
 
     # body
@@ -153,7 +175,6 @@ def swagger_response(info_description, title, version="1.0.0", host="127.0.0.1",
     yield '"description": "%s",' % info_description
     yield '"version": "%s",' % version
     yield '"title": "%s",' % title
-    yield '"termsOfService": "http://swagger.io/terms/",'
     yield '},'
     yield '"host": "%s",' % host
     yield '"basePath": "%s",' % base_path
@@ -161,9 +182,19 @@ def swagger_response(info_description, title, version="1.0.0", host="127.0.0.1",
 
     # paths
     yield '"paths": {'
+    for route, methods in routes.items():
+        yield "%s: %s," % (
+            route,
+            json.dumps({method.lower(): json.dumps(_swagger_method(callback)) for method, callback in methods.items()})
+        )
     yield '},'
     # definitions
     yield '"definitions": {'
+    for definition_name, definition_data in _definitions.items():
+        yield "%s: %s," % (
+            definition_name,
+            json.dumps(definition_data)
+        )
     yield '}'
     # end
     yield '}'
