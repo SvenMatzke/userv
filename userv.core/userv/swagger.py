@@ -1,6 +1,9 @@
 """
 set attr on func does not work in micropython therefore we need a global store here
 """
+from userv.routing import _file_response
+import os
+
 try:
     import ujson as json
 except ImportError:
@@ -134,6 +137,7 @@ def response(code, description=""):
         old_data['responses'] = responses
         _function_information[func] = old_data
         return func
+
     return _wrap
 
 
@@ -151,50 +155,71 @@ def _swagger_method(callback):
     return information
 
 
-def swagger_response(info_description, title, version="1.0.0", host="127.0.0.1", base_path="/", router_instance=None):
-    """
-    :type info_description: str
-    :type title: str
-    :type version: str
-    :type host: str
-    :type base_path: str
-    :type router_instance: userv.routing.Router
-    :return:
-    """
+def _swagger_body(info_description, title, version="1.0.0", host="127.0.0.1", base_path="/", router_instance=None):
     if router_instance is None:
         routes = {}
     else:
         routes = router_instance.routes()
-    # header
 
-    # body
     # infos
     yield "{"
     yield '"swagger": "2.0",'
     yield '"info": {'
     yield '"description": "%s",' % info_description
     yield '"version": "%s",' % version
-    yield '"title": "%s",' % title
+    yield '"title": "%s"' % title
     yield '},'
     yield '"host": "%s",' % host
     yield '"basePath": "%s",' % base_path
     yield '"schemes": ["http"],'
-
     # paths
     yield '"paths": {'
-    for route, methods in routes.items():
-        yield "%s: %s," % (
-            route,
-            json.dumps({method.lower(): json.dumps(_swagger_method(callback)) for method, callback in methods.items()})
+    route_cout = len(routes)
+    for idx, route in enumerate(routes.items()):
+        yield '"%s": %s%s' % (
+            route[0],
+            json.dumps({method.lower(): _swagger_method(callback) for method, callback in route[1].items()}),
+            "," if (idx + 1) < route_cout else ""
         )
     yield '},'
     # definitions
     yield '"definitions": {'
-    for definition_name, definition_data in _definitions.items():
-        yield "%s: %s," % (
-            definition_name,
-            json.dumps(definition_data)
+    definition_count = len(_definitions)
+    for idx, definition in enumerate(_definitions.items()):
+        yield '"%s": %s%s' % (
+            definition[0],
+            json.dumps(definition[1]),
+            "," if (idx + 1) < definition_count else ""
         )
     yield '}'
     # end
     yield '}'
+
+
+def swagger_file(info_description, title, swagger_file_name="swagger.json", version="1.0.0", host="127.0.0.1",
+                 base_path="/", router_instance=None, headers=None):
+    """
+    :type info_description: str
+    :type title: str
+    :type swagger_file_name: str
+    :type version: str
+    :type host: str
+    :type base_path: str
+    :type router_instance: userv.routing.Router
+    :type headers: list
+    function to serve static files easily
+    """
+    # create swagger file
+    if swagger_file_name in os.listdir():
+        os.remove(swagger_file_name)
+    file_ptr = open(swagger_file_name, "w")
+    try:
+        for line in  _swagger_body(info_description, title, version, host, base_path, router_instance):
+            file_ptr.write(line)
+    finally:
+        file_ptr.close()
+
+    # serve swagger file
+    def swagger_response(request):
+        return _file_response("application/json", swagger_file_name, headers=headers)
+    return swagger_response

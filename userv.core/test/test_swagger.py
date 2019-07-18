@@ -1,6 +1,7 @@
 from userv import swagger
 from userv.routing import Router
-from userv.swagger import swagger_response
+from userv.swagger import _swagger_body
+import json
 
 
 @swagger.info("My_funny summary")
@@ -9,9 +10,10 @@ from userv.swagger import swagger_response
 def myrest_func(request):
     raise
 
+
 @swagger.info("My_funny summary")
 @swagger.body('weatherinfo', {'tada': "examplevar",
-               "tada2": 2})
+                              "tada2": 2})
 @swagger.response(200, 'smth is off')
 def post_myrest_func(request):
     raise
@@ -23,8 +25,7 @@ router.add("/resturl", post_myrest_func, method="POST")
 
 
 def test_simple_sagger():
-    response = swagger_response("tada", "title_", router_instance=router)
+    response = _swagger_body("tada", "title_", router_instance=router)
     str_response = "".join(response)
-    print(str_response)
-    assert str_response
-    pass
+    read_dict = json.loads(str_response)
+    assert '/resturl' in read_dict['paths'].keys()

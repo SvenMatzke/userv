@@ -30,22 +30,6 @@ def test_get_unknown_method():
     assert router.get("/resturl") == 405
 
 
-def test_route_listings():
-    router = Router()
-
-    def test():
-        """testing info"""
-        pass
-
-    router.add("/geturl", test, method="POST")
-
-    swagger_info = list(router.list())
-    assert len(swagger_info) == 1
-    assert swagger_info[0]['url'] == "/geturl"
-    assert swagger_info[0]['method'] == "POST"
-    assert swagger_info[0]['doc'] == "testing info"
-
-
 def test_text_func():
     text_gen = text_response("hiho")
     msg = list(text_gen)
