@@ -44,6 +44,7 @@ _status_lookup = (
 )
 
 HTTP_METHODS = ('GET', 'POST', 'PUT', 'HEAD', 'OPTIONS', 'PATCH', 'DELETE')
+_default_headers = list()
 
 
 def get_status_text(status_code):
@@ -106,6 +107,14 @@ def parse_request(request_string):
 
 
 # Response part
+def set_default_header(headers):
+    """
+    sets default header send with every response
+    :type headers: list
+    """
+    _default_headers.extend(headers)
+
+
 def response_header(status=200, content_type="text/html", content_length=None, headers=None):
     """
     :type status: int
@@ -118,6 +127,7 @@ def response_header(status=200, content_type="text/html", content_length=None, h
         headers = list()
     else:
         headers = list(headers)
+    headers.extend(_default_headers)
     headers.append(("Content-Type", "%s; utf-8" % content_type))
     if content_length is not None:
         headers.append(("Content-Length", str(content_length)))

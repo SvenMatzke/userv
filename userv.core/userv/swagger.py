@@ -2,6 +2,7 @@
 set attr on func does not work in micropython therefore we need a global store here
 """
 from userv.routing import _file_response
+from userv import set_default_header
 import os
 
 try:
@@ -79,7 +80,7 @@ def parameter(name, description="", example=None, required=False):
 
     def _wrap(func):
         old_data = _function_information.get(func, {})
-        parameters = old_data.get('parameter', [])
+        parameters = old_data.get('parameters', [])
         swagger_translation = {
             'in': 'query',
             'name': name,
@@ -90,7 +91,7 @@ def parameter(name, description="", example=None, required=False):
         if example is not None:
             swagger_translation['example'] = example
         parameters.append(swagger_translation)
-        old_data["parameter"] = parameters
+        old_data["parameters"] = parameters
         _function_information[func] = old_data
         return func
 
@@ -117,7 +118,7 @@ def body(name, summary="", example=None):
             _definitions[name] = _convert_dict_for_swagger(example)
         else:
             parameters['example'] = _convert_to_swagger_type(example)
-        old_data['parameter'] = [parameters]
+        old_data['parameters'] = [parameters]
 
         _function_information[func] = old_data
         return func
@@ -209,12 +210,19 @@ def swagger_file(info_description, title, swagger_file_name="swagger.json", vers
     :type headers: list
     function to serve static files easily
     """
+    # set default header for all responses
+    default_header = [
+        ("Access-Control-Allow-Headers", "Content-Type, api_key, Authorization"),
+        ("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT"),
+        ("Access-Control-Allow-Origin", "*")
+    ]
+    set_default_header(default_header)
     # create swagger file
     if swagger_file_name in os.listdir():
         os.remove(swagger_file_name)
     file_ptr = open(swagger_file_name, "w")
     try:
-        for line in  _swagger_body(info_description, title, version, host, base_path, router_instance):
+        for line in _swagger_body(info_description, title, version, host, base_path, router_instance):
             file_ptr.write(line)
     finally:
         file_ptr.close()
@@ -222,4 +230,5 @@ def swagger_file(info_description, title, swagger_file_name="swagger.json", vers
     # serve swagger file
     def swagger_response(request):
         return _file_response("application/json", swagger_file_name, headers=headers)
+
     return swagger_response

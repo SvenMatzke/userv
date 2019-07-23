@@ -94,9 +94,11 @@ Example to serve swagger.json:
 ::
 
     from userv.swagger import swagger_file
-    router.add(/swagger.json, swagger_file('my swagger api', "api title", router_instance=router))
+    router.add("/swagger.json", swagger_file('my swagger api', "api title", router_instance=router))
 
-
+the example shows we add the router_instance and therefore all routes registered to that point.
+meaning if you want all routes in your swagger add the swagger_file shortly before running.
+All you need to do now is open an swagger ui in your browser and use the link to your swagger you serve.
 
 Further packages & webserver
 ============================
