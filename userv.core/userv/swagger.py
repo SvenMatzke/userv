@@ -146,7 +146,10 @@ def _swagger_method(callback):
     """
     converts gathered information into swagger format
     """
-    information = _function_information.get(callback, {})
+    try:
+        information = _function_information.get(callback, {})
+    except TypeError:
+        information = {}
     information['summary'] = information.get('summary', "")
     information['description'] = information.get('summary', "")
     information['produces'] = information.get('produces', ["application/json"])
