@@ -106,6 +106,7 @@ class Router:
     def add(self, route, callback, method='GET'):
         if method not in HTTP_METHODS:
             raise AttributeError("Method %s is not supported" % method)
+        method = method.upper()
         if route in self._routes:
             self._routes[route][method] = callback
         else:
@@ -127,7 +128,7 @@ class Router:
         if route_method_dict is None:
             return 404
 
-        return route_method_dict.get(method, 405)
+        return route_method_dict.get(method.upper(), 405)
 
     def routes(self):
         """gathers all information and returns the routes
