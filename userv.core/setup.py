@@ -3,7 +3,7 @@ import sdist_upip
 
 setup(
     name='userv',
-    version='0.5.3',
+    version='0.6.0',
     packages=['userv'],
     url='https://github.com/SvenMatzke/userv',
     license='MIT',

@@ -98,6 +98,13 @@ def json_response(data, status=200, headers=None):
         yield line
 
 
+def _get_cors_response(allowed_methods):
+    """creates a proper response function"""
+    def _response(request):
+        return text_response("", headers=[('Allow', " ".join(allowed_methods))])
+    return _response
+
+
 class Router:
 
     def __init__(self):
@@ -127,7 +134,9 @@ class Router:
         route_method_dict = self._routes.get(route_with_slash, self._routes.get(route_without_slash, None))
         if route_method_dict is None:
             return 404
-
+        # adding cors support but only for addresses known to router
+        if method.upper() == "OPTIONS":
+            return _get_cors_response(route_method_dict.keys())
         return route_method_dict.get(method.upper(), 405)
 
     def routes(self):

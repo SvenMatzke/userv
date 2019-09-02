@@ -214,6 +214,7 @@ def swagger_file(info_description, title, swagger_file_name="swagger.json", vers
     function to serve static files easily
     """
     # set default header for all responses
+    # Parts of cors here
     default_header = [
         ("Access-Control-Allow-Headers", "Content-Type, api_key, Authorization"),
         ("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT"),
