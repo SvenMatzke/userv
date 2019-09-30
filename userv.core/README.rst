@@ -64,7 +64,7 @@ Although the example should never expose your code. It is a pretty simple and fa
 Swagger your api
 ================
 swagger.io is the a good way to document your api. This section is a quick way to serve an swagger.json
-from your server. The view of this api has to be done in your local network.
+from your server. To view the api you can embed a swagger_index.html with cdn´s.
 
 Example for description:
 ::
@@ -93,12 +93,16 @@ Example for description:
 Example to serve swagger.json:
 ::
 
-    from userv.swagger import swagger_file
-    router.add("/swagger.json", swagger_file('my swagger api', "api title", router_instance=router))
+    from userv.swagger import swagger_file, swagger_index
+    router.add("/rest/swagger.json", swagger_file('my swagger api', "api title", router_instance=router))
+
+    router.add("/rest/index.html, swagger_index(host="127.0.0.1", swagger_json_url="rest/swagger.json")
 
 the example shows we add the router_instance and therefore all routes registered to that point.
 meaning if you want all routes in your swagger add the swagger_file shortly before running.
-All you need to do now is open an swagger ui in your browser and use the link to your swagger you serve.
+
+Now all you need to do is set proper host adresses and call up the index url in one or your browsers.
+Because this is IoT always have in mind qr-codes and other links are easy to create and glue on your device.
 
 Further packages & webserver
 ============================

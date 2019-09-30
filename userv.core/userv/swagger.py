@@ -236,3 +236,58 @@ def swagger_file(info_description, title, swagger_file_name="swagger.json", vers
         return _file_response("application/json", swagger_file_name, headers=headers)
 
     return swagger_response
+
+
+def _swagger_index(url, title="Swagger UI"):
+    """
+    generator to create a proper swagger index url
+    :type url: str
+    :return: tuple
+    """
+    yield """<!-- HTML for static distribution bundle build -->"""
+    yield """<!DOCTYPE html>"""
+    yield """<html lang="en"><head><meta charset="UTF-8">"""
+    yield """<title>%s</title>""" % title
+    yield """<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.23.11/swagger-ui.css" >"""
+    yield """<style>html{box-sizing: border-box;overflow: -moz-scrollbars-vertical;overflow-y: scroll;}*,"""
+    yield """*:before,*:after"""
+    yield """{box-sizing: inherit;}"""
+    yield """body{margin:0;background: #fafafa;}</style></head>"""
+    yield """<body><div id="swagger-ui"></div>"""
+    yield """<script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.23.11/swagger-ui-bundle.js"> </script>"""
+    yield """<script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.23.11/swagger-ui-standalone-preset.js"> </script>"""
+    yield """<script>
+    window.onload = function() {
+        const ui = SwaggerUIBundle({
+            url: "%s", dom_id: '#swagger-ui', deepLinking: true,
+            presets: [SwaggerUIBundle.presets.apis,SwaggerUIStandalonePreset],
+            plugins: [SwaggerUIBundle.plugins.DownloadUrl], layout: "StandaloneLayout"
+          })
+        window.ui = ui
+    }</script></body></html>""" % url
+
+
+def swagger_index(swagger_index_name="swagger_index.html", title="Swagger UI",
+                  host="127.0.0.1", swagger_json_url="swagger.json", headers=None):
+    """
+    creates a proper swagger_index html
+    :type swagger_index_name: str
+    :type title: str
+    :type host: str
+    :type swagger_json_url: str
+    :type headers: list
+    """
+    if swagger_index_name in os.listdir():
+        os.remove(swagger_index_name)
+    file_ptr = open(swagger_index_name, "w")
+    try:
+        for line in _swagger_index("http://%s/%s" % (host, swagger_json_url), title=title):
+            file_ptr.write(line)
+    finally:
+        file_ptr.close()
+
+    # serve swagger file
+    def swagger_response(request):
+        return _file_response("application/json", swagger_index_name, headers=headers)
+
+    return swagger_response
