@@ -288,6 +288,6 @@ def swagger_index(swagger_index_name="swagger_index.html", title="Swagger UI",
 
     # serve swagger file
     def swagger_response(request):
-        return _file_response("application/json", swagger_index_name, headers=headers)
+        return _file_response("text/html", swagger_index_name, headers=headers)
 
     return swagger_response
