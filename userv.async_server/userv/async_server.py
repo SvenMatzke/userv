@@ -24,18 +24,26 @@ def run_server(router, address="0.0.0.0", port=80):
     :type port: int
     """
     gc.collect()
-    
+
     async def run_handle(reader, writer):
         """ every request will land here"""
         gc.collect()
-        complete_request = await reader.read()
-        parsed_request = parse_request(complete_request.decode())
-        route = parsed_request.get('route')
-        _log.info("Serving %s | %s " % (route, parsed_request.get('method')))
-        callback = router.get(route=route, method=parsed_request.get('method'))
+        try:
+            complete_request = await reader.read()  # possible Connection Error
+            parsed_request = parse_request(complete_request.decode())
+            route = parsed_request.get('route')
+            _log.info("Serving %s | %s " % (route, parsed_request.get('method')))
+            callback = router.get(route=route, method=parsed_request.get('method'))
+        except Exception as e:
+            callback = 500
+            _log.error("Userv did not recieve proper request with error: %s" % str(e))
+            response_generator = text_response("Error when recieving the request: " + str(e), status=500)
+
         if callback in [404, 405]:
             _log.warning("Response with %s" % callback)
             response_generator = text_response("", status=callback)
+        elif callback in [500]:
+            pass
         elif _is_async_func(callback):
             _log.info('async route')
             try:

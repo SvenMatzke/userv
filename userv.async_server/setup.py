@@ -3,7 +3,7 @@ import sdist_upip
 
 setup(
     name='userv.async_server',
-    version='0.3.1',
+    version='0.3.2',
     packages=['userv'],
     url='https://github.com/SvenMatzke/userv',
     license='MIT',
