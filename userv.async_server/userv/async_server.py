@@ -1,11 +1,19 @@
 import gc
-import uasyncio as asyncio
+
+try:
+    import uasyncio as asyncio
+except ImportError:
+    import asyncio
 from userv import parse_request
 from userv.routing import text_response
-import ulogging
 
-_log = ulogging.getLogger("async_server")
-_log.setLevel(ulogging.DEBUG)
+try:
+    import ulogging as logging
+except ImportError:
+    import logging
+
+_log = logging.getLogger("async_server")
+_log.setLevel(logging.DEBUG)
 
 
 def _is_async_func(func):
@@ -30,6 +38,7 @@ def run_server(router, address="0.0.0.0", port=80):
         gc.collect()
         try:
             complete_request = await reader.read()  # possible Connection Error
+            # TODO request not complete => parse error
             parsed_request = parse_request(complete_request.decode())
             route = parsed_request.get('route')
             _log.info("Serving %s | %s " % (route, parsed_request.get('method')))
@@ -59,9 +68,12 @@ def run_server(router, address="0.0.0.0", port=80):
                 _log.error("Callback %s for route is normal function but was not executeable" % str(callback))
                 response_generator = text_response(str(e), status=500)
 
-        for line in response_generator:
-            await writer.awrite(line)
-        await writer.aclose()
+        try:
+            for line in response_generator:
+                await writer.awrite(line)
+            await writer.aclose()
+        except Exception as e:
+            _log.error("Writing to requester failed with: %s" % str(e))
 
     loop = asyncio.get_event_loop()
     loop.create_task(
